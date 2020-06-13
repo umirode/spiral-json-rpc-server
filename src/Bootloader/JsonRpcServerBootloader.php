@@ -14,7 +14,7 @@ use Umirode\JsonRpcServer\Server\Server;
  * Class JsonRpcServerBootloader
  * @package Umirode\JsonRpcServer\Bootloader
  */
-class JsonRpcServerBootloader extends Bootloader implements RequestHandlerInterface
+final class JsonRpcServerBootloader extends Bootloader implements RequestHandlerInterface
 {
     protected const SINGLETONS = [
         RequestHandlerInterface::class => self::class,
