@@ -1,54 +1,84 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Umirode\JsonRpcServer\Bootloader;
 
-
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Spiral\Boot\Bootloader\Bootloader;
-use Umirode\JsonRpcServer\Server\Server;
+use Spiral\Config\ConfiguratorInterface;
+use Spiral\Config\Patch\Append;
+use Umirode\JsonRpcServer\Config\JsonRpcServerConfig;
+use Umirode\JsonRpcServer\Server;
 
 /**
  * Class JsonRpcServerBootloader
  * @package Umirode\JsonRpcServer\Bootloader
  */
-final class JsonRpcServerBootloader extends Bootloader implements RequestHandlerInterface
+final class JsonRpcServerBootloader extends Bootloader
 {
     protected const SINGLETONS = [
-        RequestHandlerInterface::class => self::class,
+        RequestHandlerInterface::class => [self::class, 'jsonRpcServer'],
     ];
 
     /**
-     * @var Server
+     * @var ConfiguratorInterface
      */
-    private $server;
+    private $config;
 
     /**
-     * JsonRpcBootloader constructor.
-     * @param Server $server
+     * JsonRpcServerBootloader constructor.
+     * @param ConfiguratorInterface $config
      */
-    public function __construct(Server $server)
+    public function __construct(ConfiguratorInterface $config)
     {
-        $this->server = $server;
+        $this->config = $config;
+    }
+
+    public function boot(): void
+    {
+        $this->config->setDefaults(
+            JsonRpcServerConfig::CONFIG,
+            [
+                'services' => [],
+            ]
+        );
     }
 
     /**
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    public function handle(ServerRequestInterface $request): ResponseInterface
-    {
-        return $this->server->handle($request);
-    }
-
-    /**
-     * @param string $service
+     * @param string $class
      * @param string|null $namespace
      */
-    public function addService(string $service, ?string $namespace = null): void
+    public function addService(string $class, ?string $namespace = null): void
     {
-        $this->server->addService($service, $namespace);
+        $this->config->modify(
+            JsonRpcServerConfig::CONFIG,
+            new Append(
+                'services',
+                null,
+                [
+                    'class' => $class,
+                    'namespace' => $namespace
+                ]
+            )
+        );
+    }
+
+    /**
+     * @param JsonRpcServerConfig $config
+     * @param Server $server
+     * @return Server
+     */
+    protected function jsonRpcServer(
+        JsonRpcServerConfig $config,
+        Server $server
+    ): Server {
+        $services = $config->getServices();
+
+        foreach ($services as $service) {
+            $server->addService($service['class'], $service['namespace']);
+        }
+
+        return $server;
     }
 }

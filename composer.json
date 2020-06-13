@@ -2,7 +2,7 @@
     "name": "umirode/spiral-json-rpc-server",
     "type": "library",
     "license": "MIT",
-    "description": "Bridge for use Laminas JSON RPC in Spiral",
+    "description": "Bridge for use Laminas JSON RPC with Spiral",
     "authors": [
         {
             "name": "umirode",
@@ -17,9 +17,18 @@
         "psr/container": "^1.0",
         "laminas/laminas-diactoros": "^2.3"
     },
+    "require-dev": {
+        "phpunit/phpunit": "~7.0",
+        "spiral/code-style": "^1.0"
+    },
     "autoload": {
         "psr-4": {
             "Umirode\\JsonRpcServer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Umirode\\JsonRpcServer\\Tests\\": "tests/JsonRpcServer"
         }
     }
 }
