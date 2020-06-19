@@ -4,21 +4,16 @@ declare(strict_types=1);
 
 namespace Umirode\JsonRpcServer;
 
-use Laminas\Diactoros\Response\JsonResponse;
-use Laminas\Json\Json;
-use Laminas\Json\Server\Request;
-use Laminas\Json\Server\Server as LaminasServer;
-use Laminas\Json\Server\Smd;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use Umirode\JsonRpcServer\Laminas\LaminasServer;
 
 /**
  * Class Server
  * @package Umirode\JsonRpcServer
  */
-final class Server implements RequestHandlerInterface
+final class Server implements ServerInterface
 {
     /**
      * @var ContainerInterface
@@ -31,16 +26,32 @@ final class Server implements RequestHandlerInterface
     private $laminasServer;
 
     /**
+     * @var ServiceRequestHandler
+     */
+    private $serviceRequestHandler;
+
+    /**
+     * @var SmdRequestHandler
+     */
+    private $smdRequestHandler;
+
+    /**
      * Server constructor.
      * @param ContainerInterface $container
      * @param LaminasServer $laminasServer
+     * @param ServiceRequestHandler $serviceRequestHandler
+     * @param SmdRequestHandler $smdRequestHandler
      */
-    public function __construct(ContainerInterface $container, LaminasServer $laminasServer)
-    {
+    public function __construct(
+        ContainerInterface $container,
+        LaminasServer $laminasServer,
+        ServiceRequestHandler $serviceRequestHandler,
+        SmdRequestHandler $smdRequestHandler
+    ) {
         $this->container = $container;
         $this->laminasServer = $laminasServer;
-
-        $this->configureLaminasServer();
+        $this->serviceRequestHandler = $serviceRequestHandler;
+        $this->smdRequestHandler = $smdRequestHandler;
     }
 
     /**
@@ -48,11 +59,13 @@ final class Server implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $this->serviceRequestHandler->setLaminasServer($this->laminasServer);
+
         if ($request->getMethod() === 'GET') {
-            return $this->handleSmdRequest();
+            return $this->smdRequestHandler->handle($request);
         }
 
-        return $this->handleServiceRequest($request);
+        return $this->serviceRequestHandler->handle($request);
     }
 
     /**
@@ -65,33 +78,5 @@ final class Server implements RequestHandlerInterface
             $this->container->get($class),
             $namespace ?: ''
         );
-    }
-
-    private function configureLaminasServer(): void
-    {
-        $this->laminasServer->setReturnResponse();
-        $this->laminasServer->setEnvelope(Smd::ENV_JSONRPC_2);
-    }
-
-    /**
-     * @return ResponseInterface
-     */
-    private function handleSmdRequest(): ResponseInterface
-    {
-        return new JsonResponse($this->laminasServer->getServiceMap()->toArray());
-    }
-
-    /**
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    private function handleServiceRequest(ServerRequestInterface $request): ResponseInterface
-    {
-        $jsonRpcRequest = new Request();
-        $jsonRpcRequest->loadJson(Json::encode($request->getParsedBody()));
-
-        $response = $this->laminasServer->handle($jsonRpcRequest);
-
-        return new JsonResponse(Json::decode((string)$response, Json::TYPE_ARRAY));
     }
 }
