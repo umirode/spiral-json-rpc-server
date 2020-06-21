@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Umirode\JsonRpcServer\Tests\Laminas;
-
 
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Json\Server\Error;

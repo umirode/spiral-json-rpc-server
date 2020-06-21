@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Umirode\JsonRpcServer\Tests\Laminas;
-
 
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\TestCase;
